@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Time Tracker</title>
+    <style>
+        :root {
+            --green: #2ecc71;
+            --red: #e74c3c;
+            --dark: #2c3e50;
+            --light: #f4f7f6;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .status-bar {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .timer-display {
+            font-size: 4rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 20px 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            color: white;
+            transition: opacity 0.2s;
+        }
+
+        .btn-in { background-color: var(--green); }
+        .btn-out { background-color: var(--red); }
+        .btn:active { opacity: 0.8; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 30px 0;
+        }
+
+        .tile {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #eee;
+        }
+
+        .tile-label { font-size: 0.8rem; color: #7f8c8d; margin-bottom: 5px; }
+        .tile-value { font-size: 1.2rem; font-weight: bold; }
+
+        .history-title { border-bottom: 2px solid var(--light); padding-bottom: 10px; margin-top: 30px; }
+
+        .history-item {
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 0.9rem;
+        }
+
+        .history-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
+        .history-date { font-weight: bold; }
+        .history-duration { color: var(--dark); font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="status" class="status-bar" style="color: #7f8c8d;">Status: Clocked Out</div>
+    <div id="timer" class="timer-display">0:00:00</div>
+
+    <button id="mainBtn" class="btn btn-in">Clock In</button>
+
+    <div class="summary-grid">
+        <div class="tile">
+            <div class="tile-label">Today</div>
+            <div id="todayTotal" class="tile-value">0.00h</div>
+        </div>
+        <div class="tile">
+            <div class="tile-label">This Week</div>
+            <div id="weekTotal" class="tile-value">0.00h</div>
+        </div>
+    </div>
+
+    <h3 class="history-title">Shift History</h3>
+    <div id="historyLog"></div>
+</div>
+
+<script>
+    // --- CONFIGURATION ---
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxc_O4HFCAVvpxTXz3utchz7Y-kNI3RQ2R8cTYXHazv4st6bHdCe4bpVfx96UVflb9FGw/exec";
+
+    // --- APP STATE ---
+    let isClockedIn = false;
+    let startTime = null;
+    let timerInterval = null;
+    let shifts = JSON.parse(localStorage.getItem('shifts')) || [];
+
+    const mainBtn = document.getElementById('mainBtn');
+    const timerDisplay = document.getElementById('timer');
+    const statusText = document.getElementById('status');
+    const historyLog = document.getElementById('historyLog');
+
+    // --- INITIALIZE ---
+    function init() {
+        // Check if user was clocked in before refresh
+        const savedStart = localStorage.getItem('startTime');
+        if (savedStart) {
+            isClockedIn = true;
+            startTime = new Date(parseInt(savedStart));
+            updateUI();
+            startTimer();
+        }
+        updateSummaries();
+        renderHistory();
+    }
+
+    // --- TIMER LOGIC ---
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            const now = new Date();
+            const diff = now - startTime;
+            timerDisplay.innerText = formatTime(diff);
+        }, 1000);
+    }
+
+    function formatTime(ms) {
+        let seconds = Math.floor(ms / 1000);
+        let minutes = Math.floor(seconds / 60);
+        let hours = Math.floor(minutes / 60);
+        seconds %= 60;
+        minutes %= 60;
+        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // --- CLOCK IN / OUT ACTIONS ---
+    mainBtn.addEventListener('click', () => {
+        if (!isClockedIn) {
+            // CLOCK IN
+            isClockedIn = true;
+            startTime = new Date();
+            localStorage.setItem('startTime', startTime.getTime());
+            startTimer();
+        } else {
+            // CLOCK OUT
+            isClockedIn = false;
+            clearInterval(timerInterval);
+            const endTime = new Date();
+            const durationMs = endTime - startTime;
+
+            const newShift = {
+                date: startTime.toLocaleDateString(),
+                in: startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                out: endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                durationMs: durationMs,
+                durationDecimal: (durationMs / (1000 * 60 * 60)).toFixed(2)
+            };
+
+            shifts.unshift(newShift);
+            saveData();
+            sendToGoogleSheets(newShift);
+
+            localStorage.removeItem('startTime');
+            timerDisplay.innerText = "0:00:00";
+        }
+        updateUI();
+        updateSummaries();
+        renderHistory();
+    });
+
+    function updateUI() {
+        if (isClockedIn) {
+            statusText.innerText = "Status: Clocked In";
+            statusText.style.color = '#2ecc71';
+            mainBtn.innerText = "Clock Out";
+            mainBtn.className = "btn btn-out";
+        } else {
+            statusText.innerText = "Status: Clocked Out";
+            statusText.style.color = "#7f8c8d";
+            mainBtn.innerText = "Clock In";
+            mainBtn.className = "btn btn-in";
+        }
+    }
+
+    function saveData() {
+        localStorage.setItem('shifts', JSON.stringify(shifts));
+    }
+
+    function updateSummaries() {
+        const now = new Date();
+        const todayStr = now.toLocaleDateString();
+
+        // Calculate Today
+        const todayHours = shifts
+            .filter(s => s.date === todayStr)
+            .reduce((acc, curr) => acc + parseFloat(curr.durationDecimal), 0);
+
+        // Calculate Week (Simple logic: last 7 days)
+        const weekAgo = new Date().setDate(now.getDate() - 7);
+        const weekHours = shifts
+            .filter(s => new Date(s.date) > weekAgo)
+            .reduce((acc, curr) => acc + parseFloat(curr.durationDecimal), 0);
+
+        document.getElementById('todayTotal').innerText = todayHours.toFixed(2) + 'h';
+        document.getElementById('weekTotal').innerText = weekHours.toFixed(2) + 'h';
+    }
+
+    function renderHistory() {
+        historyLog.innerHTML = shifts.map(s => `
+            <div class="history-item">
+                <div class="history-row">
+                    <span class="history-date">${s.date}</span>
+                    <span class="history-duration">${s.durationDecimal} hours</span>
+                </div>
+                <div class="history-row" style="color: #95a5a6; font-size: 0.8rem;">
+                    <span>${s.in} - ${s.out}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // --- INTEGRATION ---
+    async function sendToGoogleSheets(shift) {
+        // Calculate weekly total for column E
+        const weekVal = document.getElementById('weekTotal').innerText.replace('h', '');
+
+        const payload = {
+            date: shift.date,
+            clockIn: shift.in,
+            clockOut: shift.out,
+            durationDecimal: shift.durationDecimal,
+            weekTotal: weekVal
+        };
+
+        try {
+            await fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors', // Essential for Google Apps Script Web Apps
+                cache: 'no-cache',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            console.log("Data sent to Sheets");
+        } catch (error) {
+            console.error("Error sending to Sheets:", error);
+        }
+    }
+
+    init();
+</script>
+
+</body>
+</html>
