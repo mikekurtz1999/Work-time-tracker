@@ -521,7 +521,27 @@
     }
 
     // ── START ─────────────────────────────────────────────────────
+    function handleUrlAction() {
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+
+    if (!action) return;
+
+    if (action === 'clockin') {
+        if (!isClockedIn) handleClockToggle();
+        return;
+    }
+
+    if (action === 'clockout') {
+        if (isClockedIn) handleClockToggle();
+        return;
+    }
+}
+
+window.addEventListener('load', () => {
     init();
+    setTimeout(handleUrlAction, 300);
+});
 </script>
 
 </body>
