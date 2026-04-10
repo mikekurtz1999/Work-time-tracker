@@ -2,140 +2,358 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Work Time Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Work Clock</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         :root {
-            --green: #2ecc71;
-            --red: #e74c3c;
-            --dark: #2c3e50;
-            --light: #f4f7f6;
-            --white: #ffffff;
+            --green: #1a9e6e;
+            --green-soft: #e8f7f1;
+            --red: #e0453f;
+            --red-soft: #fdf0ef;
+            --amber: #d4870a;
+            --amber-soft: #fef5e7;
+            --blue: #2563b8;
+            --blue-soft: #eff4fd;
+            --ink: #1a1d23;
+            --ink-mid: #4a4f5a;
+            --ink-light: #8a909e;
+            --surface: #f0f2f6;
+            --card: #ffffff;
+            --border: #e8eaee;
+            --border-strong: #d0d4dc;
+            --accent: #1a9e6e;
+            --shadow-sm: 0 1px 3px rgba(26,29,35,0.06), 0 2px 8px rgba(26,29,35,0.04);
+            --shadow-md: 0 4px 16px rgba(26,29,35,0.09), 0 2px 6px rgba(26,29,35,0.05);
+            --shadow-lg: 0 12px 40px rgba(26,29,35,0.14), 0 4px 12px rgba(26,29,35,0.07);
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--light);
-            color: var(--dark);
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
+            font-family: 'DM Sans', sans-serif;
+            background: var(--surface);
+            color: var(--ink);
+            min-height: 100vh;
+            padding-bottom: 32px;
         }
 
-        .container {
-            width: 100%;
-            max-width: 500px;
-            background: var(--white);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
+        /* ── HEADER ─────────────────────────────────────── */
+        .header {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 2px 16px rgba(26,29,35,0.07);
+            padding: 14px 20px 12px;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+            overflow: hidden;
         }
-
-        .status-bar {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #1a9e6e, #22c488);
         }
-
-        .timer-display {
-            font-size: 4rem;
+        .header-top { display: flex; justify-content: space-between; align-items: center; }
+        .header-left { display: flex; align-items: center; gap: 10px; }
+        .header-logo {
+            width: 36px; height: 36px;
+            background: linear-gradient(145deg, #22b580, #189d6b);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(26,158,110,0.30);
+        }
+        .header-title { font-size: 19px; font-weight: 700; letter-spacing: -0.4px; }
+        .header-date { font-size: 12px; color: var(--ink-light); margin-top: 1px; }
+        .header-badge {
+            font-size: 11px;
             font-weight: 700;
-            text-align: center;
-            margin: 20px 0;
-            font-variant-numeric: tabular-nums;
+            padding: 5px 11px;
+            border-radius: 20px;
+            display: none;
+        }
+        .header-badge.visible { display: block; }
+        .header-badge.clocked-in {
+            background: var(--green-soft);
+            color: var(--green);
+            border: 1px solid #b8e8d4;
         }
 
-        .btn {
+        /* ── MAIN CONTENT ───────────────────────────────── */
+        .content { padding: 16px; }
+
+        /* ── STATUS CHIP ────────────────────────────────── */
+        .status-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+        .status-chip.out {
+            background: var(--surface);
+            color: var(--ink-light);
+            border: 1px solid var(--border);
+        }
+        .status-chip.in {
+            background: var(--green-soft);
+            color: var(--green);
+            border: 1px solid #b8e8d4;
+            box-shadow: 0 2px 8px rgba(26,158,110,0.12);
+        }
+        .status-dot {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .status-chip.out .status-dot { background: var(--ink-light); }
+        .status-chip.in .status-dot { background: var(--green); }
+
+        /* ── TIMER CARD ─────────────────────────────────── */
+        .timer-card {
+            background: var(--card);
+            border: 1px solid rgba(232,234,238,0.7);
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            padding: 28px 20px 24px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .timer-display {
+            font-family: 'DM Mono', monospace;
+            font-size: 52px;
+            font-weight: 600;
+            color: var(--ink);
+            letter-spacing: -1px;
+            line-height: 1;
+            margin-bottom: 24px;
+            transition: color 0.3s;
+        }
+        .timer-display.active { color: var(--green); }
+        .timer-card.is-active {
+            background: linear-gradient(160deg, #edf9f4 0%, #ffffff 60%);
+            border-color: #b8e8d4;
+        }
+
+        /* ── CLOCK BUTTON ───────────────────────────────── */
+        .btn-clock {
             width: 100%;
-            padding: 20px;
-            font-size: 1.5rem;
-            font-weight: bold;
+            padding: 16px;
             border: none;
-            border-radius: 8px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            font-family: 'DM Sans', sans-serif;
             cursor: pointer;
             color: white;
-            transition: opacity 0.2s;
+            letter-spacing: -0.2px;
+            transition: all 0.15s;
+        }
+        .btn-clock:active { opacity: 0.85; transform: scale(0.99); }
+        .btn-clock.btn-in  {
+            background: linear-gradient(155deg, #22b580 0%, #189d6b 100%);
+            box-shadow: 0 4px 16px rgba(26,158,110,0.30);
+        }
+        .btn-clock.btn-out {
+            background: linear-gradient(155deg, #f05550 0%, #d93f3a 100%);
+            box-shadow: 0 4px 16px rgba(224,69,63,0.30);
         }
 
-        .btn-in { background-color: var(--green); }
-        .btn-out { background-color: var(--red); }
-        .btn:active { opacity: 0.8; }
-
-        .summary-grid {
+        /* ── STAT TILES ─────────────────────────────────── */
+        .summary-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 30px 0;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin: 14px 0;
         }
-
-        .tile {
-            background: var(--light);
-            padding: 15px;
-            border-radius: 8px;
+        .stat-tile {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 13px 10px 11px;
             text-align: center;
-            border: 1px solid #eee;
+            box-shadow: var(--shadow-sm);
+        }
+        .stat-tile-today  { background: linear-gradient(145deg, #c8f0df 0%, #dff7ed 100%); border-color: #8ed8b8; }
+        .stat-tile-week   { background: linear-gradient(145deg, #e8edf8 0%, #f5f7fc 100%); border-color: #d0d8ee; }
+        .stat-tile-shifts { background: linear-gradient(145deg, #e8edf8 0%, #f5f7fc 100%); border-color: #d0d8ee; }
+        .stat-label { font-size: 10px; color: var(--ink-light); font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-val {
+            font-size: 24px;
+            font-weight: 700;
+            font-family: 'DM Mono', monospace;
+            color: var(--ink);
+            line-height: 1;
+        }
+        .stat-val.green { color: var(--green); }
+
+        /* ── SECTION LABEL ──────────────────────────────── */
+        .section-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--ink-light);
+            margin: 16px 0 8px;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .section-label::before {
+            content: '';
+            display: inline-block;
+            width: 3px; height: 12px;
+            background: var(--accent);
+            border-radius: 2px;
+            flex-shrink: 0;
         }
 
-        .tile-label { font-size: 0.8rem; color: #7f8c8d; margin-bottom: 5px; }
-        .tile-value { font-size: 1.2rem; font-weight: bold; }
+        /* ── SHIFT HISTORY CARDS ────────────────────────── */
+        .shift-list { display: flex; flex-direction: column; gap: 8px; }
 
-        .history-title { border-bottom: 2px solid var(--light); padding-bottom: 10px; margin-top: 30px; }
-
-        .history-item {
-            padding: 15px 0;
-            border-bottom: 1px solid #eee;
-            font-size: 0.9rem;
+        .shift-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+        .shift-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            background: var(--green);
+            border-radius: 14px 0 0 14px;
         }
 
-        .history-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
-        .history-date { font-weight: bold; }
-        .history-duration { color: var(--dark); font-weight: bold; }
+        .shift-info { flex: 1; min-width: 0; }
+        .shift-date { font-size: 15px; font-weight: 600; }
+        .shift-times { font-size: 12px; color: var(--ink-light); margin-top: 3px; }
+        .shift-duration {
+            font-family: 'DM Mono', monospace;
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--green);
+            flex-shrink: 0;
+            text-align: right;
+        }
+        .shift-duration-label {
+            font-size: 10px;
+            color: var(--ink-light);
+            text-align: right;
+            margin-top: 2px;
+        }
+
+        /* ── EMPTY STATE ────────────────────────────────── */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--ink-light);
+        }
+        .empty-icon { font-size: 36px; margin-bottom: 10px; }
+        .empty-title { font-size: 15px; font-weight: 600; color: var(--ink-mid); margin-bottom: 4px; }
+        .empty-sub { font-size: 13px; }
+
+        /* ── TOAST ──────────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(10px);
+            background: var(--ink);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.25s;
+            z-index: 300;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div id="status" class="status-bar" style="color: #7f8c8d;">Status: Clocked Out</div>
-    <div id="timer" class="timer-display">0:00:00</div>
-
-    <button id="mainBtn" class="btn btn-in">Clock In</button>
-
-    <div class="summary-grid">
-        <div class="tile">
-            <div class="tile-label">Today</div>
-            <div id="todayTotal" class="tile-value">0.00h</div>
+<div class="header">
+    <div class="header-top">
+        <div class="header-left">
+            <div class="header-logo">⏱</div>
+            <div>
+                <div class="header-title">Work Clock</div>
+                <div class="header-date" id="headerDate"></div>
+            </div>
         </div>
-        <div class="tile">
-            <div class="tile-label">This Week</div>
-            <div id="weekTotal" class="tile-value">0.00h</div>
+        <div class="header-badge clocked-in" id="clockedInBadge">&#9679; Clocked In</div>
+    </div>
+</div>
+
+<div class="content">
+
+    <div class="timer-card">
+        <div class="status-chip out" id="statusChip">
+            <span class="status-dot"></span>
+            <span id="statusText">Clocked Out</span>
+        </div>
+
+        <div id="timerDisplay" class="timer-display">0:00:00</div>
+
+        <button id="mainBtn" class="btn-clock btn-in" onclick="handleClockToggle()">Clock In</button>
+    </div>
+
+    <div class="summary-row">
+        <div class="stat-tile stat-tile-today">
+            <div class="stat-label">Today</div>
+            <div class="stat-val green" id="todayTotal">0.00h</div>
+        </div>
+        <div class="stat-tile stat-tile-week">
+            <div class="stat-label">This Week</div>
+            <div class="stat-val" id="weekTotal">0.00h</div>
+        </div>
+        <div class="stat-tile stat-tile-shifts">
+            <div class="stat-label">Shifts</div>
+            <div class="stat-val" id="shiftCount">0</div>
         </div>
     </div>
 
-    <h3 class="history-title">Shift History</h3>
-    <div id="historyLog"></div>
+    <div class="section-label">Shift History</div>
+    <div class="shift-list" id="historyLog"></div>
+
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-    // --- CONFIGURATION ---
+    // ── CONFIG ────────────────────────────────────────────────────
     const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxc_O4HFCAVvpxTXz3utchz7Y-kNI3RQ2R8cTYXHazv4st6bHdCe4bpVfx96UVflb9FGw/exec";
 
-    // --- APP STATE ---
+    // ── STATE ─────────────────────────────────────────────────────
     let isClockedIn = false;
     let startTime = null;
     let timerInterval = null;
     let shifts = JSON.parse(localStorage.getItem('shifts')) || [];
 
-    const mainBtn = document.getElementById('mainBtn');
-    const timerDisplay = document.getElementById('timer');
-    const statusText = document.getElementById('status');
-    const historyLog = document.getElementById('historyLog');
-
-    // --- INITIALIZE ---
+    // ── INIT ──────────────────────────────────────────────────────
     function init() {
-        // Check if user was clocked in before refresh
+        document.getElementById('headerDate').textContent =
+            new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+
         const savedStart = localStorage.getItem('startTime');
         if (savedStart) {
             isClockedIn = true;
@@ -147,70 +365,84 @@
         renderHistory();
     }
 
-    // --- TIMER LOGIC ---
+    // ── TIMER ─────────────────────────────────────────────────────
     function startTimer() {
-        timerInterval = setInterval(() => {
-            const now = new Date();
-            const diff = now - startTime;
-            timerDisplay.innerText = formatTime(diff);
+        timerInterval = setInterval(function() {
+            var diff = new Date() - startTime;
+            document.getElementById('timerDisplay').textContent = formatTime(diff);
         }, 1000);
     }
 
     function formatTime(ms) {
-        let seconds = Math.floor(ms / 1000);
-        let minutes = Math.floor(seconds / 60);
-        let hours = Math.floor(minutes / 60);
+        var seconds = Math.floor(ms / 1000);
+        var minutes = Math.floor(seconds / 60);
+        var hours   = Math.floor(minutes / 60);
         seconds %= 60;
         minutes %= 60;
-        return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        return hours + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
     }
 
-    // --- CLOCK IN / OUT ACTIONS ---
-    mainBtn.addEventListener('click', () => {
+    // ── CLOCK IN / OUT ────────────────────────────────────────────
+    function handleClockToggle() {
         if (!isClockedIn) {
             // CLOCK IN
             isClockedIn = true;
-            startTime = new Date();
+            startTime   = new Date();
             localStorage.setItem('startTime', startTime.getTime());
             startTimer();
+            showToast('Clocked in');
         } else {
             // CLOCK OUT
             isClockedIn = false;
             clearInterval(timerInterval);
-            const endTime = new Date();
-            const durationMs = endTime - startTime;
+            var endTime     = new Date();
+            var durationMs  = endTime - startTime;
 
-            const newShift = {
-                date: startTime.toLocaleDateString(),
-                in: startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                out: endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                durationMs: durationMs,
+            var newShift = {
+                date:            startTime.toLocaleDateString(),
+                in:              startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                out:             endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                durationMs:      durationMs,
                 durationDecimal: (durationMs / (1000 * 60 * 60)).toFixed(2)
             };
 
             shifts.unshift(newShift);
             saveData();
-            sendToGoogleSheets(newShift);
+            sendToSheets(newShift);
 
             localStorage.removeItem('startTime');
-            timerDisplay.innerText = "0:00:00";
+            document.getElementById('timerDisplay').textContent = '0:00:00';
+            showToast('Clocked out \u2014 ' + newShift.durationDecimal + 'h logged');
         }
         updateUI();
         updateSummaries();
         renderHistory();
-    });
+    }
 
     function updateUI() {
+        var chip      = document.getElementById('statusChip');
+        var statusTxt = document.getElementById('statusText');
+        var btn       = document.getElementById('mainBtn');
+        var timer     = document.getElementById('timerDisplay');
+        var badge     = document.getElementById('clockedInBadge');
+
+        var timerCard = document.querySelector('.timer-card');
         if (isClockedIn) {
-            statusText.innerText = "Status: Clocked In";
-            statusText.style.color = '#2ecc71';
-            mainBtn.innerText = "Clock Out";
-            mainBtn.className = "btn btn-out";
+            chip.className    = 'status-chip in';
+            statusTxt.textContent = 'Clocked In';
+            btn.textContent   = 'Clock Out';
+            btn.className     = 'btn-clock btn-out';
+            timer.classList.add('active');
+            badge.classList.add('visible');
+            if (timerCard) timerCard.classList.add('is-active');
         } else {
-            statusText.innerText = "Status: Clocked Out";
-            statusText.style.color = "#7f8c8d";
-            mainBtn.innerText = "Clock In";
-            mainBtn.className = "btn btn-in";
+            chip.className    = 'status-chip out';
+            statusTxt.textContent = 'Clocked Out';
+            btn.textContent   = 'Clock In';
+            btn.className     = 'btn-clock btn-in';
+            timer.classList.remove('active');
+            badge.classList.remove('visible');
+            if (timerCard) timerCard.classList.remove('is-active');
         }
     }
 
@@ -218,110 +450,78 @@
         localStorage.setItem('shifts', JSON.stringify(shifts));
     }
 
+    // ── SUMMARIES ─────────────────────────────────────────────────
     function updateSummaries() {
-        const now = new Date();
-        const todayStr = now.toLocaleDateString();
+        var now      = new Date();
+        var todayStr = now.toLocaleDateString();
+        var weekAgo  = new Date().setDate(now.getDate() - 7);
 
-        // Calculate Today
-        const todayHours = shifts
-            .filter(s => s.date === todayStr)
-            .reduce((acc, curr) => acc + parseFloat(curr.durationDecimal), 0);
+        var todayHours = shifts
+            .filter(function(s) { return s.date === todayStr; })
+            .reduce(function(acc, s) { return acc + parseFloat(s.durationDecimal); }, 0);
 
-        // Calculate Week (Simple logic: last 7 days)
-        const weekAgo = new Date().setDate(now.getDate() - 7);
-        const weekHours = shifts
-            .filter(s => new Date(s.date) > weekAgo)
-            .reduce((acc, curr) => acc + parseFloat(curr.durationDecimal), 0);
+        var weekHours = shifts
+            .filter(function(s) { return new Date(s.date) > weekAgo; })
+            .reduce(function(acc, s) { return acc + parseFloat(s.durationDecimal); }, 0);
 
-        document.getElementById('todayTotal').innerText = todayHours.toFixed(2) + 'h';
-        document.getElementById('weekTotal').innerText = weekHours.toFixed(2) + 'h';
+        document.getElementById('todayTotal').textContent  = todayHours.toFixed(2) + 'h';
+        document.getElementById('weekTotal').textContent   = weekHours.toFixed(2) + 'h';
+        document.getElementById('shiftCount').textContent  = shifts.length;
     }
 
+    // ── HISTORY ───────────────────────────────────────────────────
     function renderHistory() {
-        historyLog.innerHTML = shifts.map(s => `
-            <div class="history-item">
-                <div class="history-row">
-                    <span class="history-date">${s.date}</span>
-                    <span class="history-duration">${s.durationDecimal} hours</span>
-                </div>
-                <div class="history-row" style="color: #95a5a6; font-size: 0.8rem;">
-                    <span>${s.in} - ${s.out}</span>
-                </div>
-            </div>
-        `).join('');
+        var el = document.getElementById('historyLog');
+        if (shifts.length === 0) {
+            el.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128336;</div><div class="empty-title">No shifts yet</div><div class="empty-sub">Clock in to log your first shift.</div></div>';
+            return;
+        }
+        el.innerHTML = shifts.map(function(s) {
+            return '<div class="shift-card">'
+                + '<div class="shift-info">'
+                + '<div class="shift-date">' + s.date + '</div>'
+                + '<div class="shift-times">' + s.in + ' &rarr; ' + s.out + '</div>'
+                + '</div>'
+                + '<div>'
+                + '<div class="shift-duration">' + s.durationDecimal + 'h</div>'
+                + '</div>'
+                + '</div>';
+        }).join('');
     }
 
-    // --- INTEGRATION ---
-    async function sendToGoogleSheets(shift) {
-        // Calculate weekly total for column E
-        const weekVal = document.getElementById('weekTotal').innerText.replace('h', '');
-
-        const payload = {
-            date: shift.date,
-            clockIn: shift.in,
-            clockOut: shift.out,
-            durationDecimal: shift.durationDecimal,
-            weekTotal: weekVal
-        };
-
+    // ── SHEETS SYNC ───────────────────────────────────────────────
+    async function sendToSheets(shift) {
+        if (!WEB_APP_URL) return;
+        var weekVal = document.getElementById('weekTotal').textContent.replace('h', '');
         try {
             await fetch(WEB_APP_URL, {
-                method: 'POST',
-                mode: 'no-cors', // Essential for Google Apps Script Web Apps
-                cache: 'no-cache',
+                method:  'POST',
+                mode:    'no-cors',
+                cache:   'no-cache',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body:    JSON.stringify({
+                    date:            shift.date,
+                    clockIn:         shift.in,
+                    clockOut:        shift.out,
+                    durationDecimal: shift.durationDecimal,
+                    weekTotal:       weekVal
+                })
             });
-            console.log("Data sent to Sheets");
-        } catch (error) {
-            console.error("Error sending to Sheets:", error);
+        } catch (e) {
+            console.error('Sheets sync failed:', e);
         }
     }
 
+    // ── TOAST ─────────────────────────────────────────────────────
+    function showToast(msg) {
+        var t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        setTimeout(function() { t.classList.remove('show'); }, 2500);
+    }
+
+    // ── START ─────────────────────────────────────────────────────
     init();
-
-    // --- MACRODROID AUTO TRIGGER ---
-    function checkURLAction() {
-        const params = new URLSearchParams(window.location.search);
-        const action = params.get('action');
-
-        if (action === 'clockin' && !isClockedIn) {
-            isClockedIn = true;
-            startTime = new Date();
-            localStorage.setItem('startTime', startTime.getTime());
-            startTimer();
-            updateUI();
-            updateSummaries();
-            renderHistory();
-        }
-
-        if (action === 'clockout' && isClockedIn) {
-            isClockedIn = false;
-            clearInterval(timerInterval);
-            const endTime = new Date();
-            const durationMs = endTime - startTime;
-
-            const newShift = {
-                date: startTime.toLocaleDateString(),
-                in: startTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                out: endTime.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                durationMs: durationMs,
-                durationDecimal: (durationMs / (1000 * 60 * 60)).toFixed(2)
-            };
-
-            shifts.unshift(newShift);
-            saveData();
-            sendToGoogleSheets(newShift);
-
-            localStorage.removeItem('startTime');
-            timerDisplay.innerText = "0:00:00";
-            updateUI();
-            updateSummaries();
-            renderHistory();
-        }
-    }
-
-    checkURLAction();
 </script>
 
 </body>
