@@ -491,28 +491,27 @@
 
     // ── SHEETS SYNC ───────────────────────────────────────────────
     async function sendToSheets(shift) {
-        if (!WEB_APP_URL) return;
-        var weekVal = document.getElementById('weekTotal').textContent.replace('h', '');
-        try {
-            await fetch(WEB_APP_URL, {
-                method:  'POST',
-                mode:    'no-cors',
-                cache:   'no-cache',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-    event:           'manualEntry',
-    date:            shift.date,
-    clockIn:         shift.in,
-    clockOut:        shift.out,
-    durationDecimal: shift.durationDecimal,
-    weekTotal:       weekVal
-})
-                })
-            });
-        } catch (e) {
-            console.error('Sheets sync failed:', e);
-        }
+    if (!WEB_APP_URL) return;
+    var weekVal = document.getElementById('weekTotal').textContent.replace('h', '');
+    try {
+        await fetch(WEB_APP_URL, {
+            method:  'POST',
+            mode:    'no-cors',
+            cache:   'no-cache',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                event:           'manualEntry',
+                date:            shift.date,
+                clockIn:         shift.in,
+                clockOut:        shift.out,
+                durationDecimal: shift.durationDecimal,
+                weekTotal:       weekVal
+            })
+        });
+    } catch (e) {
+        console.error('Sheets sync failed:', e);
     }
+}
 
     // ── TOAST ─────────────────────────────────────────────────────
     function showToast(msg) {
