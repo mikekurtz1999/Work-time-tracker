@@ -499,12 +499,14 @@
                 mode:    'no-cors',
                 cache:   'no-cache',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({
-                    date:            shift.date,
-                    clockIn:         shift.in,
-                    clockOut:        shift.out,
-                    durationDecimal: shift.durationDecimal,
-                    weekTotal:       weekVal
+                body: JSON.stringify({
+    event:           'manualEntry',
+    date:            shift.date,
+    clockIn:         shift.in,
+    clockOut:        shift.out,
+    durationDecimal: shift.durationDecimal,
+    weekTotal:       weekVal
+})
                 })
             });
         } catch (e) {
