@@ -493,21 +493,15 @@
     async function sendToSheets(shift) {
     if (!WEB_APP_URL) return;
     var weekVal = document.getElementById('weekTotal').textContent.replace('h', '');
+    var url = WEB_APP_URL
+        + "?action=manualEntry"
+        + "&date=" + encodeURIComponent(shift.date)
+        + "&clockIn=" + encodeURIComponent(shift.in)
+        + "&clockOut=" + encodeURIComponent(shift.out)
+        + "&durationDecimal=" + encodeURIComponent(shift.durationDecimal)
+        + "&weekTotal=" + encodeURIComponent(weekVal);
     try {
-        await fetch(WEB_APP_URL, {
-            method:  'POST',
-            mode:    'no-cors',
-            cache:   'no-cache',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                event:           'manualEntry',
-                date:            shift.date,
-                clockIn:         shift.in,
-                clockOut:        shift.out,
-                durationDecimal: shift.durationDecimal,
-                weekTotal:       weekVal
-            })
-        });
+        await fetch(url, { redirect: 'follow' });
     } catch (e) {
         console.error('Sheets sync failed:', e);
     }
